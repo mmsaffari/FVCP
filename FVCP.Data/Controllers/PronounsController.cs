@@ -67,7 +67,8 @@ namespace FVCPD.Controllers {
 			_context.Pronouns.Add(pronoun);
 			await _context.SaveChangesAsync();
 
-			return CreatedAtAction("GetPronoun", new { id = pronoun.Id }, pronoun);
+			//return CreatedAtAction("GetPronoun", new { id = pronoun.Id }, pronoun);
+			return CreatedAtAction(nameof(GetPronoun), new { id = pronoun.Id }, pronoun);
 		}
 
 		// DELETE: api/Pronouns/5
