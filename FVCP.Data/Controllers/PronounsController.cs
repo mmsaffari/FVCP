@@ -23,36 +23,37 @@ namespace FVCPD.Controllers {
 		// GET: api/Pronouns
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<PronounDTO>>> GetPronouns() {
-			return (await _context.Pronouns.ToListAsync())
-				.Select(pronoun => new PronounDTO {
-					Id = pronoun.Id,
-					Name = pronoun.Name,
-					Enabled = pronoun.Enabled,
-					Remarks = pronoun.Remarks
-				}).ToList();
+			return (await _context.Pronouns.ToListAsync()).Select(item => ItemToDTO(item)).ToList();
 		}
 
 		// GET: api/Pronouns/5
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Pronoun>> GetPronoun(int id) {
+		public async Task<ActionResult<PronounDTO>> GetPronoun(int id) {
 			var pronoun = await _context.Pronouns.FindAsync(id);
 
 			if (pronoun == null) {
 				return NotFound();
 			}
 
-			return pronoun;
+			return ItemToDTO(pronoun);
 		}
 
 		// PUT: api/Pronouns/5
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPut("{id}")]
-		public async Task<IActionResult> PutPronoun(int id, Pronoun pronoun) {
-			if (id != pronoun.Id) {
+		public async Task<IActionResult> PutPronoun(int id, PronounDTO dto) {
+			if (id != dto.Id) {
 				return BadRequest();
 			}
+			
+			var item = await _context.Pronouns.FindAsync(id);
+			if (item == null) { return NotFound(); }
 
-			_context.Entry(pronoun).State = EntityState.Modified;
+			item.Name = dto.Name;
+			item.Enabled = dto.Enabled;
+			item.Remarks = dto.Remarks;
+			
+			_context.Entry(item).State = EntityState.Modified;
 
 			try {
 				await _context.SaveChangesAsync();
@@ -70,12 +71,13 @@ namespace FVCPD.Controllers {
 		// POST: api/Pronouns
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
-		public async Task<ActionResult<PronounDTO>> PostPronoun(PronounDTO pronoun) {
-			_context.Pronouns.Add(new Pronoun { Id = pronoun.Id, Name = pronoun.Name, Enabled = pronoun.Enabled, Remarks = pronoun.Remarks });
+		public async Task<ActionResult<PronounDTO>> PostPronoun(PronounDTO dto) {
+			var item = DTOToItem(dto);
+			_context.Pronouns.Add(item);
 			try {
 				await _context.SaveChangesAsync();
 
-				return CreatedAtAction(nameof(GetPronoun), new { id = pronoun.Id }, pronoun);
+				return CreatedAtAction(nameof(GetPronoun), new { id = item.Id }, ItemToDTO(item));
 			} catch (Exception ex) {
 				ModelState.AddModelError(ex.Source, ex.InnerException != null ? ex.InnerException.Message : ex.Message);
 				return UnprocessableEntity(ModelState);
@@ -99,5 +101,8 @@ namespace FVCPD.Controllers {
 		private bool PronounExists(int id) {
 			return _context.Pronouns.Any(e => e.Id == id);
 		}
+
+		private static PronounDTO ItemToDTO(Pronoun item) => new() { Id = item.Id, Name = item.Name, Enabled = item.Enabled, Remarks = item.Remarks };
+		private static Pronoun DTOToItem(PronounDTO dto) => new() { Name = dto.Name, Enabled = dto.Enabled, Remarks = dto.Remarks };
 	}
 }
