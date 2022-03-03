@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FVCPD.Data;
 using FVCPD.Data.Models;
+using FVCPD.Models;
 
 namespace FVCPD.Controllers {
 	[Route("api/[controller]")]
@@ -21,8 +22,14 @@ namespace FVCPD.Controllers {
 
 		// GET: api/Pronouns
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<Pronoun>>> GetPronouns() {
-			return await _context.Pronouns.ToListAsync();
+		public async Task<ActionResult<IEnumerable<PronounDTO>>> GetPronouns() {
+			return (await _context.Pronouns.ToListAsync())
+				.Select(pronoun => new PronounDTO {
+					Id = pronoun.Id,
+					Name = pronoun.Name,
+					Enabled = pronoun.Enabled,
+					Remarks = pronoun.Remarks
+				}).ToList();
 		}
 
 		// GET: api/Pronouns/5
@@ -63,12 +70,16 @@ namespace FVCPD.Controllers {
 		// POST: api/Pronouns
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
-		public async Task<ActionResult<Pronoun>> PostPronoun(Pronoun pronoun) {
-			_context.Pronouns.Add(pronoun);
-			await _context.SaveChangesAsync();
+		public async Task<ActionResult<PronounDTO>> PostPronoun(PronounDTO pronoun) {
+			_context.Pronouns.Add(new Pronoun { Id = pronoun.Id, Name = pronoun.Name, Enabled = pronoun.Enabled, Remarks = pronoun.Remarks });
+			try {
+				await _context.SaveChangesAsync();
 
-			//return CreatedAtAction("GetPronoun", new { id = pronoun.Id }, pronoun);
-			return CreatedAtAction(nameof(GetPronoun), new { id = pronoun.Id }, pronoun);
+				return CreatedAtAction(nameof(GetPronoun), new { id = pronoun.Id }, pronoun);
+			} catch (Exception ex) {
+				ModelState.AddModelError(ex.Source, ex.InnerException != null ? ex.InnerException.Message : ex.Message);
+				return UnprocessableEntity(ModelState);
+			}
 		}
 
 		// DELETE: api/Pronouns/5
