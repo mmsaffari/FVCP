@@ -16,8 +16,11 @@ namespace FVCPD.Controllers {
 	public class PronounsController : ControllerBase {
 		private readonly FVCPDbContext _context;
 
+
 		public PronounsController(FVCPDbContext context) {
 			_context = context;
+			//https://docs.automapper.org/en/latest/Getting-started.html
+			var mapper = (new MapperConfiguration);
 		}
 
 		// GET: api/Pronouns
@@ -102,7 +105,5 @@ namespace FVCPD.Controllers {
 			return _context.Pronouns.Any(e => e.Id == id);
 		}
 
-		private static PronounDTO ItemToDTO(Pronoun item) => new() { Id = item.Id, Name = item.Name, Enabled = item.Enabled, Remarks = item.Remarks };
-		private static Pronoun DTOToItem(PronounDTO dto) => new() { Name = dto.Name, Enabled = dto.Enabled, Remarks = dto.Remarks };
 	}
 }
