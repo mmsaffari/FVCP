@@ -9,24 +9,33 @@ using Microsoft.EntityFrameworkCore;
 using FVCPD.Data;
 using FVCPD.Data.Models;
 using FVCPD.Models;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace FVCPD.Controllers {
 	[Route("api/[controller]")]
 	[ApiController]
 	public class PronounsController : ControllerBase {
 		private readonly FVCPDbContext _context;
-
+		private readonly IMapper _mapper;
+		private readonly IMapper _mapper_ignores_id;
 
 		public PronounsController(FVCPDbContext context) {
 			_context = context;
-			//https://docs.automapper.org/en/latest/Getting-started.html
-			var mapper = (new MapperConfiguration);
+			_mapper = new MapperConfiguration(cfg => {
+				cfg.CreateMap<Pronoun, PronounDTO>();
+			}).CreateMapper();
+			_mapper_ignores_id = new MapperConfiguration(cfg => {
+				cfg.CreateMap<PronounDTO, Pronoun>()
+					.ForMember(dest => dest.Id, act => act.Ignore());
+			}).CreateMapper();
 		}
 
 		// GET: api/Pronouns
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<PronounDTO>>> GetPronouns() {
-			return (await _context.Pronouns.ToListAsync()).Select(item => ItemToDTO(item)).ToList();
+			//return (await _context.Pronouns.ToListAsync()).Select(item => _mapper.Map<PronounDTO>(item)).ToList();
+			return await _context.Pronouns.ProjectTo<PronounDTO>(_mapper.ConfigurationProvider).ToListAsync();
 		}
 
 		// GET: api/Pronouns/5
@@ -38,7 +47,7 @@ namespace FVCPD.Controllers {
 				return NotFound();
 			}
 
-			return ItemToDTO(pronoun);
+			return _mapper.Map<PronounDTO>(pronoun);
 		}
 
 		// PUT: api/Pronouns/5
@@ -48,14 +57,15 @@ namespace FVCPD.Controllers {
 			if (id != dto.Id) {
 				return BadRequest();
 			}
-			
+
 			var item = await _context.Pronouns.FindAsync(id);
 			if (item == null) { return NotFound(); }
 
-			item.Name = dto.Name;
-			item.Enabled = dto.Enabled;
-			item.Remarks = dto.Remarks;
-			
+			//item.Name = dto.Name;
+			//item.Enabled = dto.Enabled;
+			//item.Remarks = dto.Remarks;
+			item = _mapper_ignores_id.Map<Pronoun>(dto);
+
 			_context.Entry(item).State = EntityState.Modified;
 
 			try {
@@ -75,12 +85,12 @@ namespace FVCPD.Controllers {
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
 		public async Task<ActionResult<PronounDTO>> PostPronoun(PronounDTO dto) {
-			var item = DTOToItem(dto);
+			var item = _mapper_ignores_id.Map<Pronoun>(dto);
 			_context.Pronouns.Add(item);
 			try {
 				await _context.SaveChangesAsync();
 
-				return CreatedAtAction(nameof(GetPronoun), new { id = item.Id }, ItemToDTO(item));
+				return CreatedAtAction(nameof(GetPronoun), new { id = item.Id }, _mapper.Map<PronounDTO>(item));
 			} catch (Exception ex) {
 				ModelState.AddModelError(ex.Source, ex.InnerException != null ? ex.InnerException.Message : ex.Message);
 				return UnprocessableEntity(ModelState);
