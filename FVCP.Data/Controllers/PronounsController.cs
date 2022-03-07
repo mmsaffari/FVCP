@@ -22,11 +22,10 @@ namespace FVCPD.Controllers {
 
 		public PronounsController(FVCPDbContext context) {
 			_context = context;
-			_mapper = new MapperConfiguration(cfg => {
-				cfg.CreateMap<Pronoun, PronounDTO>();
-			}).CreateMapper();
+			_mapper = new MapperConfiguration(cfg => { cfg.CreateMap<Pronoun, PronounDTO>(); }).CreateMapper();
 			_mapper_ignores_id = new MapperConfiguration(cfg => {
-				cfg.CreateMap<PronounDTO, Pronoun>()
+				cfg
+					.CreateMap<PronounDTO, Pronoun>()
 					.ForMember(dest => dest.Id, act => act.Ignore());
 			}).CreateMapper();
 		}
@@ -34,7 +33,6 @@ namespace FVCPD.Controllers {
 		// GET: api/Pronouns
 		[HttpGet]
 		public async Task<ActionResult<IEnumerable<PronounDTO>>> GetPronouns() {
-			//return (await _context.Pronouns.ToListAsync()).Select(item => _mapper.Map<PronounDTO>(item)).ToList();
 			return await _context.Pronouns.ProjectTo<PronounDTO>(_mapper.ConfigurationProvider).ToListAsync();
 		}
 
@@ -58,15 +56,12 @@ namespace FVCPD.Controllers {
 				return BadRequest();
 			}
 
-			var item = await _context.Pronouns.FindAsync(id);
-			if (item == null) { return NotFound(); }
+			var pronoun = await _context.Pronouns.FindAsync(id);
+			if (pronoun == null) { return NotFound(); }
 
-			//item.Name = dto.Name;
-			//item.Enabled = dto.Enabled;
-			//item.Remarks = dto.Remarks;
-			item = _mapper_ignores_id.Map<Pronoun>(dto);
+			pronoun = _mapper_ignores_id.Map<Pronoun>(dto);
 
-			_context.Entry(item).State = EntityState.Modified;
+			_context.Entry(pronoun).State = EntityState.Modified;
 
 			try {
 				await _context.SaveChangesAsync();
@@ -85,12 +80,12 @@ namespace FVCPD.Controllers {
 		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 		[HttpPost]
 		public async Task<ActionResult<PronounDTO>> PostPronoun(PronounDTO dto) {
-			var item = _mapper_ignores_id.Map<Pronoun>(dto);
-			_context.Pronouns.Add(item);
+			var pronoun = _mapper_ignores_id.Map<Pronoun>(dto);
+			_context.Pronouns.Add(pronoun);
 			try {
 				await _context.SaveChangesAsync();
 
-				return CreatedAtAction(nameof(GetPronoun), new { id = item.Id }, _mapper.Map<PronounDTO>(item));
+				return CreatedAtAction(nameof(GetPronoun), new { id = pronoun.Id }, _mapper.Map<PronounDTO>(pronoun));
 			} catch (Exception ex) {
 				ModelState.AddModelError(ex.Source, ex.InnerException != null ? ex.InnerException.Message : ex.Message);
 				return UnprocessableEntity(ModelState);
